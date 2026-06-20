@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const PASSWORD = "event2026"; // 仲間内のパスワード（変更可能）
+const PASSWORD = "jrcna18"; // 仲間内のパスワード（変更可能）
 
 const INITIAL_POSTS = [
   {
@@ -70,6 +70,12 @@ export default function App() {
 
   const handleClose = (id) => {
     setPosts(posts.map((p) => (p.id === id ? { ...p, status: "closed" } : p)));
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm("この投稿を削除しますか？")) {
+      setPosts(posts.filter((p) => p.id !== id));
+    }
   };
 
   const filtered = posts.filter((p) => filter === "all" || p.type === filter);
@@ -181,6 +187,17 @@ export default function App() {
       cursor: "pointer",
       marginTop: 10,
     },
+    deleteBtn: {
+      fontSize: 11,
+      padding: "4px 12px",
+      borderRadius: 10,
+      border: "1px solid rgba(239,102,80,0.35)",
+      background: "transparent",
+      color: "#f87c6a",
+      cursor: "pointer",
+      marginTop: 10,
+      marginLeft: 8,
+    },
     statusBadge: {
       position: "absolute",
       top: 14,
@@ -209,7 +226,7 @@ export default function App() {
       maxWidth: 340,
       width: "90%",
     },
-    loginTitle: { fontSize: 18, fontWeight: 700, marginBottom: 6 },
+    loginTitle: { fontSize: 18, fontWeight: 700, marginBottom: 6, color: "#BFBFBF" },
     loginSub: { fontSize: 12, color: "#7888a8", marginBottom: 24 },
     input: {
       width: "100%",
@@ -320,16 +337,16 @@ export default function App() {
         <div style={styles.loginBox}>
           <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#c4a050", marginBottom: 16 }}>18th JRCNA KYOTO</div>
           <div style={styles.loginTitle}>チケット譲渡掲示板</div>
-          <div style={styles.loginSub}>参加者限定のページです<br />合言葉を入力してください</div>
+          <div style={styles.loginSub}>参加者限定のページです<br />パスワードを入力してください</div>
           <input
             style={styles.input}
             type="password"
-            placeholder="合言葉"
+            placeholder="パスワード"
             value={pwInput}
             onChange={(e) => setPwInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
           />
-          {pwError && <div style={styles.error}>合言葉が違います</div>}
+          {pwError && <div style={styles.error}>パスワードが違います</div>}
           <button style={styles.loginBtn} onClick={handleLogin}>入室する</button>
         </div>
       </div>
@@ -380,9 +397,12 @@ export default function App() {
             </div>
             {p.note && <div style={styles.note}>{p.note}</div>}
             <div style={styles.contact}>連絡先：{p.contact}</div>
-            {p.status === "open" && (
-              <button style={styles.closeBtn} onClick={() => handleClose(p.id)}>成立済みにする</button>
-            )}
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {p.status === "open" && (
+                <button style={styles.closeBtn} onClick={() => handleClose(p.id)}>成立済みにする</button>
+              )}
+              <button style={styles.deleteBtn} onClick={() => handleDelete(p.id)}>削除</button>
+            </div>
           </div>
         ))}
       </div>
