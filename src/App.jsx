@@ -361,7 +361,7 @@ export default function App() {
       <div style={styles.header}>
         <div style={styles.logo}>18TH JRCNA KYOTO</div>
         <h1 style={styles.title}>チケット譲渡掲示板</h1>
-        <div style={styles.subtitle}>参加者間でチケットの売買・譲渡ができます</div>
+        <div style={styles.subtitle}>参加者間でチケットの譲渡ができます</div>
       </div>
 
       <div style={styles.container}>
