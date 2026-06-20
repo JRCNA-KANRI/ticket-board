@@ -82,7 +82,15 @@ export default function App() {
     }
   };
 
-  const filtered = posts.filter((p) => filter === "all" || p.type === filter);
+  const filtered = posts
+    .filter((p) => filter === "all" || p.type === filter)
+    .sort((a, b) => {
+      if (a.status === "closed" && b.status !== "closed") return 1;
+      if (a.status !== "closed" && b.status === "closed") return -1;
+      const aTime = a.createdAt?.seconds ?? 0;
+      const bTime = b.createdAt?.seconds ?? 0;
+      return bTime - aTime;
+    });
 
   const styles = {
     page: {
