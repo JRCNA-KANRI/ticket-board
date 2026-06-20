@@ -1,42 +1,47 @@
 import { useState, useEffect } from "react";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
 
-const PASSWORD = "jrcna18"; // 仲間内のパスワード（変更可能）
+// ========================================
+// ★ ここにFirebaseの設定を貼り付けてください
+// ========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDb29C8nU3ybHaYOvw6czA1aW1s8XJoS6Y",
+  authDomain: "ticket-board-f3c3a.firebaseapp.com",
+  projectId: "ticket-board-f3c3a",
+  storageBucket: "ticket-board-f3c3a.firebasestorage.app",
+  messagingSenderId: "1092812216455",
+  appId: "1:1092812216455:web:a9fedb56157633cf1f0022"
+};
+// ========================================
 
-const INITIAL_POSTS = [
-  {
-    id: 1,
-    type: "sell",
-    name: "田中 健一",
-    seats: 2,
-    price: 5000,
-    note: "当日急用で参加できなくなりました。定価でお譲りします。",
-    contact: "tanaka@example.com",
-    date: "2026-06-15",
-    status: "open",
-  },
-  {
-    id: 2,
-    type: "buy",
-    name: "鈴木 美咲",
-    seats: 1,
-    price: 5000,
-    note: "1枚だけ追加で欲しいです。よろしくお願いします！",
-    contact: "suzuki@example.com",
-    date: "2026-06-17",
-    status: "open",
-  },
-];
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const PASSWORD = "jrcna18";
 
 export default function App() {
   const [auth, setAuth] = useState(false);
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState(false);
-  const [posts, setPosts] = useState(INITIAL_POSTS);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ type: "sell", name: "", seats: 1, price: "", note: "", contact: "" });
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Firestoreからリアルタイムでデータ取得
+  useEffect(() => {
+    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setPosts(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleLogin = () => {
     if (pwInput === PASSWORD) {
@@ -47,20 +52,19 @@ export default function App() {
     }
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!form.name || !form.price || !form.contact) {
       setFormError("名前・価格・連絡先は必須です");
       return;
     }
-    const newPost = {
-      id: Date.now(),
+    await addDoc(collection(db, "posts"), {
       ...form,
       seats: Number(form.seats),
       price: Number(form.price),
       date: new Date().toISOString().split("T")[0],
       status: "open",
-    };
-    setPosts([newPost, ...posts]);
+      createdAt: new Date(),
+    });
     setForm({ type: "sell", name: "", seats: 1, price: "", note: "", contact: "" });
     setShowForm(false);
     setFormError("");
@@ -68,13 +72,13 @@ export default function App() {
     setTimeout(() => setSuccessMsg(""), 3000);
   };
 
-  const handleClose = (id) => {
-    setPosts(posts.map((p) => (p.id === id ? { ...p, status: "closed" } : p)));
+  const handleClose = async (id) => {
+    await updateDoc(doc(db, "posts", id), { status: "closed" });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("この投稿を削除しますか？")) {
-      setPosts(posts.filter((p) => p.id !== id));
+      await deleteDoc(doc(db, "posts", id));
     }
   };
 
@@ -143,9 +147,7 @@ export default function App() {
       letterSpacing: "0.03em",
     },
     ticket: (status) => ({
-      background: status === "closed"
-        ? "rgba(255,255,255,0.04)"
-        : "rgba(255,255,255,0.06)",
+      background: status === "closed" ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.06)",
       border: `1px solid ${status === "closed" ? "rgba(255,255,255,0.08)" : "rgba(196,160,80,0.25)"}`,
       borderRadius: 12,
       padding: "18px 20px",
@@ -209,7 +211,6 @@ export default function App() {
       color: "#7888a8",
       letterSpacing: "0.05em",
     },
-    // Login
     loginWrap: {
       minHeight: "100vh",
       display: "flex",
@@ -254,7 +255,6 @@ export default function App() {
       cursor: "pointer",
     },
     error: { fontSize: 12, color: "#f87c6a", marginTop: 8 },
-    // Form
     formOverlay: {
       position: "fixed", inset: 0,
       background: "rgba(0,0,0,0.7)",
@@ -329,13 +329,16 @@ export default function App() {
       zIndex: 200,
     },
     empty: { textAlign: "center", color: "#6a7490", padding: "40px 0", fontSize: 14 },
+    loadingWrap: {
+      textAlign: "center", color: "#6a7490", padding: "60px 0", fontSize: 14,
+    },
   };
 
   if (!auth) {
     return (
       <div style={styles.loginWrap}>
         <div style={styles.loginBox}>
-          <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#c4a050", marginBottom: 16 }}>18th JRCNA KYOTO</div>
+          <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#c4a050", marginBottom: 16 }}>18TH JRCNA KYOTO</div>
           <div style={styles.loginTitle}>チケット譲渡掲示板</div>
           <div style={styles.loginSub}>参加者限定のページです<br />パスワードを入力してください</div>
           <input
@@ -356,7 +359,7 @@ export default function App() {
   return (
     <div style={styles.page}>
       <div style={styles.header}>
-        <div style={styles.logo}>18th JRCNA KYOTO</div>
+        <div style={styles.logo}>18TH JRCNA KYOTO</div>
         <h1 style={styles.title}>チケット譲渡掲示板</h1>
         <div style={styles.subtitle}>参加者間でチケットの売買・譲渡ができます</div>
       </div>
@@ -371,7 +374,8 @@ export default function App() {
           <button style={styles.postBtn} onClick={() => setShowForm(true)}>＋ 投稿する</button>
         </div>
 
-        {filtered.length === 0 && <div style={styles.empty}>該当する投稿がありません</div>}
+        {loading && <div style={styles.loadingWrap}>読み込み中...</div>}
+        {!loading && filtered.length === 0 && <div style={styles.empty}>該当する投稿がありません</div>}
 
         {filtered.map((p) => (
           <div key={p.id} style={styles.ticket(p.status)}>
@@ -411,34 +415,22 @@ export default function App() {
         <div style={styles.formOverlay}>
           <div style={styles.formBox}>
             <div style={styles.formTitle}>チケットを投稿する</div>
-
             <label style={styles.fieldLabel}>種別</label>
             <div style={styles.radioGroup}>
-              <div style={styles.radio(form.type === "sell")} onClick={() => setForm({...form, type: "sell"})}>
-                譲渡したい
-              </div>
-              <div style={styles.radio(form.type === "buy")} onClick={() => setForm({...form, type: "buy"})}>
-                欲しい
-              </div>
+              <div style={styles.radio(form.type === "sell")} onClick={() => setForm({...form, type: "sell"})}>譲渡したい</div>
+              <div style={styles.radio(form.type === "buy")} onClick={() => setForm({...form, type: "buy"})}>欲しい</div>
             </div>
-
             <label style={styles.fieldLabel}>お名前 *</label>
             <input style={styles.fieldInput} value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} placeholder="例：田中 健一" />
-
             <label style={styles.fieldLabel}>枚数</label>
             <input style={styles.fieldInput} type="number" min={1} value={form.seats} onChange={(e) => setForm({...form, seats: e.target.value})} />
-
             <label style={styles.fieldLabel}>希望価格（円） *</label>
             <input style={styles.fieldInput} type="number" value={form.price} onChange={(e) => setForm({...form, price: e.target.value})} placeholder="例：5000" />
-
             <label style={styles.fieldLabel}>メッセージ</label>
             <textarea style={{...styles.fieldInput, height: 72, resize: "vertical"}} value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} placeholder="一言メッセージがあればどうぞ" />
-
             <label style={styles.fieldLabel}>連絡先（メール・LINEなど） *</label>
             <input style={styles.fieldInput} value={form.contact} onChange={(e) => setForm({...form, contact: e.target.value})} placeholder="例：xxx@email.com" />
-
             {formError && <div style={styles.error}>{formError}</div>}
-
             <div style={styles.formActions}>
               <button style={styles.cancelBtn} onClick={() => { setShowForm(false); setFormError(""); }}>キャンセル</button>
               <button style={styles.submitBtn} onClick={handlePost}>投稿する</button>
