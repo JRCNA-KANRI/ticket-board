@@ -160,7 +160,6 @@ export default function App() {
       borderRadius: 12,
       padding: "18px 20px",
       marginBottom: 14,
-      position: "relative",
       opacity: status === "closed" ? 0.55 : 1,
     }),
     ticketHeader: {
@@ -209,15 +208,14 @@ export default function App() {
       marginLeft: 8,
     },
     statusBadge: {
-      position: "absolute",
-      top: 14,
-      right: 14,
       fontSize: 10,
-      padding: "2px 8px",
-      borderRadius: 8,
+      padding: "3px 10px",
+      borderRadius: 10,
       background: "rgba(255,255,255,0.1)",
       color: "#7888a8",
       letterSpacing: "0.05em",
+      border: "1px solid rgba(255,255,255,0.15)",
+      fontWeight: 700,
     },
     loginWrap: {
       minHeight: "100vh",
@@ -387,14 +385,16 @@ export default function App() {
 
         {filtered.map((p) => (
           <div key={p.id} style={styles.ticket(p.status)}>
-            {p.status === "closed" && <div style={styles.statusBadge}>成立済み</div>}
             <div style={styles.ticketHeader}>
               <div>
                 <div style={styles.name}>{p.name}</div>
                 <div style={styles.date}>{p.date}</div>
               </div>
-              <div style={styles.typeBadge(p.type)}>
-                {p.type === "sell" ? "譲渡したい" : "譲ってほしい"}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                <div style={styles.typeBadge(p.type)}>
+                  {p.type === "sell" ? "譲渡したい" : "譲ってほしい"}
+                </div>
+                {p.status === "closed" && <div style={styles.statusBadge}>成立済み</div>}
               </div>
             </div>
             <div style={styles.priceRow}>
